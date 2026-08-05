@@ -1,152 +1,15 @@
 /**
- * GAME HITUNG CEPAT (JavaScript Logic + Web Audio API)
+ * GAME HITUNG CEPAT (JavaScript Logic)
  */
 
 // ==========================================
-// 1. SYSTEM AUDIO (WEB AUDIO API)
-// ==========================================
-let audioCtx = null;
-let bgmInterval = null;
-let isMuted = false;
-
-// Inisialisasi Audio Context saat interaksi pertama
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-}
-
-// Fitur 1: Suara Klik Tombol
-function playSoundClick() {
-    if (isMuted) return;
-    initAudio();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.08);
-
-    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.08);
-}
-
-// Fitur 2: Suara Jawaban Benar (Nada Ceria)
-function playSoundCorrect() {
-    if (isMuted) return;
-    initAudio();
-    const now = audioCtx.currentTime;
-
-    // Nada C5 - E5 - G5
-    [523.25, 659.25, 783.99].forEach((freq, index) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + index * 0.08);
-
-        gain.gain.setValueAtTime(0.18, now + index * 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + index * 0.08 + 0.15);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(now + index * 0.08);
-        osc.stop(now + index * 0.08 + 0.15);
-    });
-}
-
-// Fitur 3: Suara Jawaban Salah (Nada Rendah)
-function playSoundWrong() {
-    if (isMuted) return;
-    initAudio();
-    const now = audioCtx.currentTime;
-
-    // Nada F3 -> C3
-    [174.61, 130.81].forEach((freq, index) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, now + index * 0.12);
-
-        gain.gain.setValueAtTime(0.2, now + index * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + index * 0.12 + 0.2);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(now + index * 0.12);
-        osc.stop(now + index * 0.12 + 0.2);
-    });
-}
-
-// Fitur 4: Background Music (BGM Chiptune Halus)
-let bgmStep = 0;
-const bgmNotes = [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 349.23];
-
-function startBGM() {
-    stopBGM();
-    if (isMuted) return;
-    initAudio();
-    bgmStep = 0;
-
-    bgmInterval = setInterval(() => {
-        if (isMuted || !audioCtx) return;
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(bgmNotes[bgmStep % bgmNotes.length], now);
-
-        gain.gain.setValueAtTime(0.03, now); // Volume dibuat lembut agar tidak mengganggu
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + 0.22);
-
-        bgmStep++;
-    }, 260);
-}
-
-function stopBGM() {
-    if (bgmInterval) {
-        clearInterval(bgmInterval);
-        bgmInterval = null;
-    }
-}
-
-// Otomatis jalankan suara klik pada semua tombol bertipe .btn
-document.addEventListener('DOMContentLoaded', () => {
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('.btn')) {
-            playSoundClick();
-        }
-    });
-});
-
-
-// ==========================================
-// 2. STATE MANAGEMENT & SETTING
+// 1. STATE MANAGEMENT
 // ==========================================
 const setting = {
     operators: [],
     panjangSoal: null,
     difficulty: null,
-    durasiTimer: 60
+    durasiTimer: 60 // Default 60 detik
 };
 
 let poinBenar = 0;
@@ -154,11 +17,15 @@ let poinSalah = 0;
 let poinJumlahSoal = 0;
 let jawabanBenarCurrent = 0;
 
+// Timer & Akumulasi Waktu
 let timerInterval = null;
 let sisaWaktu = 60;
 let waktuSoalMulai = 0;
-let totalWaktuJawab = 0;
+let totalWaktuJawab = 0; // Menyimpan total detik pengerjaan semua soal
 
+// ==========================================
+// 2. NAVIGASI TAMPILAN
+// ==========================================
 function tampilkanScreen(idScreen) {
     const semuaScreen = document.querySelectorAll('.screen');
     semuaScreen.forEach(s => s.classList.remove('active'));
@@ -171,6 +38,9 @@ function bukaSetting() {
     tampilkanScreen('screen-setting');
 }
 
+// ==========================================
+// 3. LOGIKA SETTING
+// ==========================================
 function simpanSetting() {
     const checkboxes = document.querySelectorAll('.op-check:checked');
     setting.operators = Array.from(checkboxes).map(cb => cb.value);
@@ -214,9 +84,8 @@ function resetSetting() {
     alert("Setting berhasil di-reset!");
 }
 
-
 // ==========================================
-// 3. MATH ENGINE
+// 4. MATH ENGINE
 // ==========================================
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -257,9 +126,8 @@ function buatSoal() {
     return { teksSoal, teksJawaban };
 }
 
-
 // ==========================================
-// 4. TIMER & GAMEPLAY LOGIC
+// 5. LOGIKA TIMER SESI GAME
 // ==========================================
 function startGlobalTimer() {
     stopTimer();
@@ -300,6 +168,9 @@ function updateTimerDisplay() {
     }
 }
 
+// ==========================================
+// 6. GAMEPLAY & HITUNG RATA-RATA WAKTU
+// ==========================================
 function mulaiGame() {
     if (setting.operators.length === 0 || !setting.panjangSoal || !setting.difficulty) {
         alert("Anda belum melakukan setting! Harap atur setting terlebih dahulu.");
@@ -310,11 +181,10 @@ function mulaiGame() {
     poinBenar = 0;
     poinSalah = 0;
     poinJumlahSoal = 0;
-    totalWaktuJawab = 0;
+    totalWaktuJawab = 0; // Reset akumulasi detik pengerjaan
 
     tampilkanScreen('screen-game');
     startGlobalTimer();
-    startBGM(); // <--- Meringankan & memutar BGM saat game mulai
     generateSoalBaru();
 }
 
@@ -340,8 +210,9 @@ function generateSoalBaru() {
 function submitJawaban(event) {
     event.preventDefault();
 
+    // Hitung durasi waktu pengerjaan soal ini
     const durasiDetik = (Date.now() - waktuSoalMulai) / 1000;
-    totalWaktuJawab += durasiDetik;
+    totalWaktuJawab += durasiDetik; // Akumulasikan total waktu
 
     const inputUser = parseFloat(document.getElementById('user-jawab').value);
     const feedbackEl = document.getElementById('feedback');
@@ -356,12 +227,10 @@ function submitJawaban(event) {
         poinBenar++;
         feedbackEl.className = "feedback correct";
         feedbackEl.innerText = `✓ Benar! (${durasiDetik.toFixed(2)}s)`;
-        playSoundCorrect(); // <--- Suara Jawaban Benar
     } else {
         poinSalah++;
         feedbackEl.className = "feedback wrong";
         feedbackEl.innerText = `✗ Salah! Jawaban: ${Number(jawabanBenarCurrent.toFixed(2))} (${durasiDetik.toFixed(2)}s)`;
-        playSoundWrong(); // <--- Suara Jawaban Salah
     }
 
     setTimeout(() => {
@@ -373,8 +242,8 @@ function submitJawaban(event) {
 
 function selesaiGame() {
     stopTimer();
-    stopBGM(); // <--- Hentikan BGM saat game selesai/quit
 
+    // Hitung rata-rata waktu menjawab
     const rataRata = poinJumlahSoal > 0 ? (totalWaktuJawab / poinJumlahSoal).toFixed(2) : 0;
 
     document.getElementById('stat-benar').innerText = poinBenar;
