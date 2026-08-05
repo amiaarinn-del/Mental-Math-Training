@@ -1,0 +1,413 @@
+/* ==========================================
+   DESAIN DASAR & VARIABEL CSS (DARK THEME + ANIMATIONS)
+   ========================================== */
+:root {
+    --primary-color: #6366f1;
+    /* Indigo Accent */
+    --primary-hover: #4f46e5;
+    --secondary-color: #334155;
+    /* Dark Slate Gray */
+    --secondary-hover: #475569;
+    --danger-color: #ef4444;
+    /* Crimson Red */
+    --danger-hover: #dc2626;
+    --success-color: #4ade80;
+    /* Vibrant Green */
+
+    --bg-color: #0f172a;
+    /* Deep Blue-Black Background */
+    --card-bg: #1e293b;
+    /* Dark Card Surface */
+    --box-bg: #0f172a;
+    /* Surface for inputs/boxes */
+
+    --text-color: #f8fafc;
+    /* High-Contrast Light Text */
+    --text-muted: #94a3b8;
+    /* Soft Gray Subtitles */
+    --border-color: #334155;
+    /* Subtle Border Lines */
+    --border-radius: 16px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+}
+
+/* ==========================================
+   ANIMASI KEYFRAMES
+   ========================================== */
+/* Transisi Kemunculan Kartu & Layar */
+@keyframes cardAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.96);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes screenFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Animasi Soal Baru (Pop Effect) */
+@keyframes popSoal {
+    0% {
+        opacity: 0;
+        transform: scale(0.88);
+    }
+
+    60% {
+        transform: scale(1.03);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Animasi Feedback Jawaban */
+@keyframes popFeedbackCorrect {
+    0% {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+
+    50% {
+        transform: scale(1.08);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes shakeWrong {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20%,
+    60% {
+        transform: translateX(-8px);
+    }
+
+    40%,
+    80% {
+        transform: translateX(8px);
+    }
+}
+
+/* Container Utama (Card UI) */
+.card {
+    background: var(--card-bg);
+    padding: 2.5rem 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 20px 30px -5px rgba(0, 0, 0, 0.6), 0 10px 15px -5px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 450px;
+    animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 25px 35px -5px rgba(0, 0, 0, 0.7), 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+h1,
+h2 {
+    text-align: center;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ==========================================
+   MANAJEMEN PERGANTIAN TAMPILAN (SCREEN)
+   ========================================== */
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+    animation: screenFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================
+   FORM & INPUT STYLING
+   ========================================== */
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+input[type="number"],
+select {
+    width: 100%;
+    padding: 12px 14px;
+    background-color: var(--box-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease;
+}
+
+select option {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+input[type="number"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+}
+
+.checkbox-group {
+    display: flex;
+    gap: 12px;
+    background: var(--box-bg);
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: normal;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: color 0.2s;
+}
+
+.checkbox-item:hover {
+    color: var(--primary-color);
+}
+
+input[type="checkbox"] {
+    accent-color: var(--primary-color);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* ==========================================
+   BUTTONS
+   ========================================== */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.btn {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.45);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-hover);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-hover);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 2px solid var(--danger-color);
+    color: var(--danger-color);
+    margin-top: 10px;
+    box-shadow: none;
+}
+
+.btn-outline:hover {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+/* ==========================================
+   GAMEPLAY & FEEDBACK
+   ========================================== */
+.problem-box {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    background: var(--box-bg);
+    color: var(--text-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+    letter-spacing: 2px;
+}
+
+.problem-box.pop-anim {
+    animation: popSoal 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.feedback {
+    text-align: center;
+    font-weight: 600;
+    margin-top: 15px;
+    min-height: 24px;
+    transition: opacity 0.2s;
+}
+
+.feedback.correct {
+    color: var(--success-color);
+    animation: popFeedbackCorrect 0.35s ease forwards;
+}
+
+.feedback.wrong {
+    color: var(--danger-color);
+    animation: shakeWrong 0.4s ease forwards;
+}
+
+/* ==========================================
+   STATISTIK (RESULT)
+   ========================================== */
+.stat-box {
+    background: var(--box-bg);
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.05rem;
+    color: var(--text-color);
+}
+
+.text-success {
+    color: var(--success-color);
+}
+
+.text-danger {
+    color: var(--danger-color);
+}
+
+/* ==========================================
+   GAMEPLAY HEADER & TIMER STYLING
+   ========================================== */
+.game-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.timer-box {
+    background: var(--box-bg);
+    border: 1px solid var(--border-color);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: color 0.2s, border-color 0.2s;
+}
+
+/* Peringatan Saat Waktu Sisa <= 3 Detik */
+.timer-box.warning {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+    animation: shakeWrong 0.4s infinite;
+}
