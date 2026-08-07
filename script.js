@@ -89,19 +89,12 @@ function simpanSetting() {
         return;
     }
 
-    if (!isEndless) {
-        if (isNaN(durasi) || durasi < 10 || durasi > 300) {
-            alert("Durasi timer harus antara 10 hingga 300 detik!");
-            return;
-        }
-    } else {
-        durasi = 60; // Default fallback jika endless mode diaktifkan
-    }
+
 
     setting.panjangSoal = pSoal;
     setting.difficulty = diff;
     setting.endlessMode = isEndless;
-    setting.durasiTimer = durasi;
+    setting.durasiTimer = (!isNaN(durasi) && durasi >= 10) ? durasi : 60;
 
     // Simpan ke LocalStorage
     localStorage.setItem('rimath_setting', JSON.stringify(setting));
