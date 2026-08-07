@@ -1,5 +1,5 @@
 /**
- * GAME HITUNG CEPAT (JavaScript Logic) - Final & Fixed
+ * GAME HITUNG CEPAT (JavaScript Logic) - Final & Bug-Free
  * Standar Matematika: PEMDAS (Standar JavaScript)
  */
 
@@ -19,7 +19,7 @@ let poinSalah = 0;
 let poinJumlahSoal = 0;
 let jawabanBenarCurrent = 0;
 
-// Timer, Timeout & Flags Proteksi
+// Timer, Timeout & Flags Proteksi Bug
 let timerInterval = null;
 let feedbackTimeout = null;
 let isProcessingAnswer = false;
@@ -75,6 +75,7 @@ function simpanSetting() {
     const diff = parseInt(document.getElementById('difficulty').value);
     const isEndless = document.getElementById('endless-mode').checked;
 
+    // Validasi ketat (Mencegah input tidak masuk akal / bypass HTML)
     if (setting.operators.length === 0) {
         alert("Operator tidak boleh kosong! Harap pilih minimal 1.");
         return;
@@ -94,7 +95,7 @@ function simpanSetting() {
             return;
         }
     } else {
-        durasi = 60;
+        durasi = 60; // Default fallback jika endless mode diaktifkan
     }
 
     setting.panjangSoal = pSoal;
@@ -102,6 +103,7 @@ function simpanSetting() {
     setting.endlessMode = isEndless;
     setting.durasiTimer = durasi;
 
+    // Simpan ke LocalStorage
     localStorage.setItem('rimath_setting', JSON.stringify(setting));
 
     alert("Setting berhasil disimpan!");
@@ -140,6 +142,7 @@ function muatSettingDariStorage() {
         setting.durasiTimer = parsed.durasiTimer || 60;
         setting.endlessMode = parsed.endlessMode || false;
 
+        // Sinkronkan UI Form Setting dengan data tersimpan
         document.querySelectorAll('.op-check').forEach(cb => {
             cb.checked = setting.operators.includes(cb.value);
         });
@@ -158,84 +161,47 @@ function muatSettingDariStorage() {
 }
 
 // ==========================================
-// 4. MATH ENGINE (PEMDAS + Pembagian Variatif)
+// 4. MATH ENGINE (PEMDAS + Pembagian Bulat)
 // ==========================================
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function buatSoal() {
-    let lower = 2, higher = 10;
+    let lower = 1, higher = 100;
     if (setting.difficulty === 2) {
-        lower = 5;
-        higher = 25;
+        lower = 100;
+        higher = 1000;
     } else if (setting.difficulty === 3) {
-        lower = 10;
-        higher = 50;
+        lower = 10000;
+        higher = 100000;
     }
 
     const soalAngka = [];
     const soalOperator = [];
 
-    // 1. Pilih operator acak
+    for (let i = 0; i < setting.panjangSoal; i++) {
+        soalAngka.push(getRandomInt(lower, higher));
+    }
+
     for (let i = 0; i < setting.panjangSoal - 1; i++) {
         const randomOp = setting.operators[Math.floor(Math.random() * setting.operators.length)];
         soalOperator.push(randomOp);
     }
 
-    // 2. Isi nilai acak awal pada array angka
-    for (let i = 0; i < setting.panjangSoal; i++) {
-        soalAngka.push(getRandomInt(lower, higher));
-    }
-
-    // 3. Algoritma Pembagian Presisi (Garansi Hasil Bulat & Variatif)
-    let idx = 0;
-    while (idx < soalOperator.length) {
-        if (soalOperator[idx] === '/') {
-            let L = idx;
-            let R = idx;
-
-            // Identifikasi blok pembagian beruntun (misal: A / B / C)
-            while (R + 1 < soalOperator.length && soalOperator[R + 1] === '/') {
-                R++;
-            }
-
-            const maxDiv = (setting.difficulty === 1) ? 10 : (setting.difficulty === 2 ? 15 : 25);
-            const maxAns = (setting.difficulty === 1) ? 10 : (setting.difficulty === 2 ? 20 : 30);
-
-            let totalPembagi = 1;
-            for (let k = L; k <= R; k++) {
-                const pembagi = getRandomInt(2, maxDiv);
-                soalAngka[k + 1] = pembagi;
-                totalPembagi *= pembagi;
-            }
-
-            // Target hasil selalu >= 2 (mencegah jawaban bernilai 1)
-            const targetHasil = getRandomInt(2, maxAns);
-            soalAngka[L] = targetHasil * totalPembagi;
-
-            idx = R + 1;
-        } else {
-            idx++;
-        }
-    }
-
-    // 4. Gabungkan token menjadi string ekspresi matematika
     const token = [];
-    for (let k = 0; k < soalOperator.length; k++) {
-        token.push(soalAngka[k]);
-        token.push(soalOperator[k]);
+    for (let i = 0; i < soalOperator.length; i++) {
+        token.push(soalAngka[i]);
+        token.push(soalOperator[i]);
     }
     token.push(soalAngka[soalAngka.length - 1]);
 
     const teksSoal = token.join(' ');
-
-    // Evaluasi sesuai standar PEMDAS
-    const rawResult = new Function(`return ${teksSoal}`)();
-    const teksJawaban = Math.round(rawResult * 100) / 100;
+    const teksJawaban = new Function(`return ${teksSoal}`)();
 
     return { teksSoal, teksJawaban };
 }
+
 
 // ==========================================
 // 5. LOGIKA TIMER SESI GAME
@@ -336,11 +302,12 @@ function generateSoalBaru() {
 function submitJawaban(event) {
     event.preventDefault();
 
+    // Proteksi: Mencegah spam/double submit saat animasi feedback berjalan
     if (isProcessingAnswer) return;
     isProcessingAnswer = true;
 
     const inputUser = document.getElementById('user-jawab');
-    inputUser.disabled = true;
+    inputUser.disabled = true; // Kunci input sementara
 
     const durasiDetik = (Date.now() - waktuSoalMulai) / 1000;
     totalWaktuJawab += durasiDetik;
@@ -364,6 +331,7 @@ function submitJawaban(event) {
         feedbackEl.innerText = `✗ Salah! Jawaban: ${Number(jawabanBenarCurrent.toFixed(2))} (${durasiDetik.toFixed(2)}s)`;
     }
 
+    // Simpan ID timeout agar bisa dibatalkan jika tombol Quit ditekan
     feedbackTimeout = setTimeout(() => {
         feedbackEl.innerText = '';
         feedbackEl.className = "feedback";
@@ -374,6 +342,7 @@ function submitJawaban(event) {
 function selesaiGame() {
     stopTimer();
 
+    // Batalkan pemanggilan soal baru jika Quit ditekan saat feedback masih aktif
     if (feedbackTimeout) {
         clearTimeout(feedbackTimeout);
         feedbackTimeout = null;
