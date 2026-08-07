@@ -2,10 +2,6 @@
  * GAME HITUNG CEPAT (JavaScript Logic) - Final & Bug-Free
  * Standar Matematika: PEMDAS (Standar JavaScript)
  */
-
-// ==========================================
-// 1. STATE MANAGEMENT
-// ==========================================
 const setting = {
     operators: [],
     panjangSoal: null,
@@ -18,8 +14,109 @@ let poinBenar = 0;
 let poinSalah = 0;
 let poinJumlahSoal = 0;
 let jawabanBenarCurrent = 0;
+let currentStreak = 0;
+let maxStreak = 0;
 
-// Timer, Timeout & Flags Proteksi Bug
+
+const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function playSoundEffect(type) {
+    try {
+        if (!AudioContextClass) return;
+        if (!audioCtx) {
+            audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'success') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+            osc.start(now);
+            osc.stop(now + 0.15);
+
+        } else if (type === 'combo5') {
+            // Combo 5
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.08);
+            osc.frequency.setValueAtTime(783.99, now + 0.16);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+
+        } else if (type === 'combo10') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(587.33, now);
+            osc.frequency.setValueAtTime(880, now + 0.1);
+            osc.frequency.setValueAtTime(1174.66, now + 0.2);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+            osc.start(now);
+            osc.stop(now + 0.45);
+
+        } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(164.81, now);
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.2);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+        }
+    } catch (e) {
+        // Abaikan jika browser memblokir audio.
+    }
+}
+// ==========================================
+// STREAK UI
+// ==========================================
+function updateStreakUI(isIncrement = true) {
+    const streakDisplay = document.getElementById('streak-display');
+    const streakBox = document.getElementById('streak-box');
+
+    if (!streakDisplay || !streakBox) return;
+
+    // Update angka streak
+    streakDisplay.innerText = currentStreak;
+
+    // Reset animasi
+    streakBox.classList.remove(
+        'streak-anim-up',
+        'streak-anim-break',
+        'milestone-5',
+        'milestone-10',
+        'milestone-20'
+    );
+
+    void streakBox.offsetWidth;
+
+    if (isIncrement && currentStreak > 0) {
+        streakBox.classList.add('streak-anim-up');
+        if (currentStreak >= 20) {
+            streakBox.classList.add('milestone-20');
+        } else if (currentStreak >= 10) {
+            streakBox.classList.add('milestone-10');
+        } else if (currentStreak >= 5) {
+            streakBox.classList.add('milestone-5');
+        }
+    } else if (!isIncrement) {
+        streakBox.classList.add('streak-anim-break');
+    }
+}
 let timerInterval = null;
 let feedbackTimeout = null;
 let isProcessingAnswer = false;
@@ -27,7 +124,6 @@ let sisaWaktu = 60;
 let waktuBerjalan = 0;
 let waktuSoalMulai = 0;
 let totalWaktuJawab = 0;
-
 // ==========================================
 // 2. NAVIGASI TAMPILAN & INITIALIZATION
 // ==========================================
@@ -38,16 +134,14 @@ document.addEventListener('DOMContentLoaded', () => {
 function tampilkanScreen(idScreen) {
     const semuaScreen = document.querySelectorAll('.screen');
     semuaScreen.forEach(s => s.classList.remove('active'));
-
     const screenTarget = document.getElementById(idScreen);
+
     screenTarget.classList.add('active');
 }
-
 function bukaSetting() {
     tampilkanScreen('screen-setting');
     toggleEndlessMode();
 }
-
 // ==========================================
 // 3. LOGIKA SETTING & LOCAL STORAGE
 // ==========================================
@@ -56,7 +150,6 @@ function toggleEndlessMode() {
     const inputDurasi = document.getElementById('durasi-timer');
 
     if (!endlessCheck || !inputDurasi) return;
-
     if (endlessCheck.checked) {
         inputDurasi.disabled = true;
         inputDurasi.style.opacity = "0.5";
@@ -75,7 +168,6 @@ function simpanSetting() {
     const diff = parseInt(document.getElementById('difficulty').value);
     const isEndless = document.getElementById('endless-mode').checked;
 
-    // Validasi ketat (Mencegah input tidak masuk akal / bypass HTML)
     if (setting.operators.length === 0) {
         alert("Operator tidak boleh kosong! Harap pilih minimal 1.");
         return;
@@ -89,8 +181,6 @@ function simpanSetting() {
         return;
     }
 
-
-
     setting.panjangSoal = pSoal;
     setting.difficulty = diff;
     setting.endlessMode = isEndless;
@@ -102,7 +192,6 @@ function simpanSetting() {
     alert("Setting berhasil disimpan!");
     tampilkanScreen('screen-menu');
 }
-
 function resetSetting() {
     setting.operators = [];
     setting.panjangSoal = null;
@@ -154,7 +243,7 @@ function muatSettingDariStorage() {
 }
 
 // ==========================================
-// 4. MATH ENGINE (PEMDAS + Pembagian Bulat)
+// 4. MATH ENGINE
 // ==========================================
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -194,8 +283,6 @@ function buatSoal() {
 
     return { teksSoal, teksJawaban };
 }
-
-
 // ==========================================
 // 5. LOGIKA TIMER SESI GAME
 // ==========================================
@@ -265,6 +352,14 @@ function mulaiGame() {
     totalWaktuJawab = 0;
     isProcessingAnswer = false;
 
+
+    // Reset streak saat sesi baru
+    currentStreak = 0;
+    maxStreak = 0;
+
+    updateStreakUI();
+
+
     tampilkanScreen('screen-game');
     startGlobalTimer();
     generateSoalBaru();
@@ -292,6 +387,10 @@ function generateSoalBaru() {
     isProcessingAnswer = false;
 }
 
+
+// ==========================================
+// SUBMIT JAWABAN + STREAK
+// ==========================================
 function submitJawaban(event) {
     event.preventDefault();
 
@@ -316,10 +415,45 @@ function submitJawaban(event) {
 
     if (isCorrect) {
         poinBenar++;
+        // Tambah streak
+        currentStreak++;
+        // Simpan streak tertinggi
+        maxStreak =
+            Math.max(
+                maxStreak, currentStreak);
+
+        // ==============================
+        // MILESTONE COMBO
+        // ==============================
+
+        if (currentStreak === 5) {
+            feedbackEl.innerText = `🔥 5 COMBO! (${durasiDetik.toFixed(2)}s)`;
+            playSoundEffect('combo5');
+
+        } else if (currentStreak === 10) {
+            feedbackEl.innerText = `🔥 10 COMBO! (${durasiDetik.toFixed(2)}s)`;
+            playSoundEffect('combo10');
+
+        } else if (currentStreak === 20 || (currentStreak > 20 && currentStreak % 10 === 0)) {
+            feedbackEl.innerText = `🔥 ${currentStreak} COMBO SPECIAL! (${durasiDetik.toFixed(2)}s)`;
+            playSoundEffect('combo10');
+
+        } else {
+            feedbackEl.innerText = `✓ Benar! (${durasiDetik.toFixed(2)}s)`;
+            playSoundEffect('success');
+        }
         feedbackEl.className = "feedback correct";
-        feedbackEl.innerText = `✓ Benar! (${durasiDetik.toFixed(2)}s)`;
+        updateStreakUI(true);
+        // ======================================
+        // JAWABAN SALAH
+        // ======================================
     } else {
         poinSalah++;
+        // Reset streak
+        currentStreak = 0;
+        updateStreakUI(false);
+        playSoundEffect('wrong');
+
         feedbackEl.className = "feedback wrong";
         feedbackEl.innerText = `✗ Salah! Jawaban: ${Number(jawabanBenarCurrent.toFixed(2))} (${durasiDetik.toFixed(2)}s)`;
     }
@@ -332,6 +466,10 @@ function submitJawaban(event) {
     }, 1000);
 }
 
+
+// ==========================================
+// 7. SELESAI GAME & STATISTIK
+// ==========================================
 function selesaiGame() {
     stopTimer();
 
@@ -341,14 +479,16 @@ function selesaiGame() {
         feedbackTimeout = null;
     }
     isProcessingAnswer = false;
-
     const rataRata = poinJumlahSoal > 0 ? (totalWaktuJawab / poinJumlahSoal).toFixed(2) : 0;
-
     document.getElementById('stat-benar').innerText = poinBenar;
     document.getElementById('stat-salah').innerText = poinSalah;
     document.getElementById('stat-total').innerText = poinJumlahSoal;
     document.getElementById('stat-rata-waktu').innerText = `${rataRata}s / soal`;
+    // Maximum Streak
+    const statMaxStreak = document.getElementById('stat-max-streak');
+    if (statMaxStreak) {
+        statMaxStreak.innerText = `🔥 ${maxStreak}`;
+    }
     document.getElementById('feedback').innerText = '';
-
     tampilkanScreen('screen-stat');
 }

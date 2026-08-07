@@ -104,7 +104,14 @@
         <div id="screen-game" class="screen">
             <!-- HEADER GAMEPLAY (Posisikan timer di atas kotak soal) -->
             <div class="game-header">
-                <span class="game-indicator">SESSION IN PROGRESS</span>
+                <span class="game-indicator">Semangat!❤️</span>
+                <!-- FITUR BARU: STREAK / COMBO -->
+                <div id="streak-box" class="streak-box">
+                    <span class="streak-icon">🔥</span>
+                    <span id="streak-display" class="streak-number">0</span>
+                    <span class="streak-label">STREAK</span>
+                </div>
+
                 <div id="timer-box" class="timer-box">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -151,6 +158,11 @@
                 <div class="stat-item">
                     <span>Rata-rata Waktu</span>
                     <strong id="stat-rata-waktu">0s / soal</strong>
+                </div>
+                <!-- FITUR BARU: MAX STREAK -->
+                <div class="stat-item">
+                    <span>Max Streak</span>
+                    <strong id="stat-max-streak" class="text-streak">🔥 0</strong>
                 </div>
             </div>
             <button class="btn btn-primary" onclick="tampilkanScreen('screen-menu')">Kembali ke Menu Utama</button>
