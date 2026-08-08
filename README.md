@@ -1,70 +1,60 @@
-# 🧮 Hitung Cepat (Rimath)
+# 🚀 Rimath - Fast Math Practice
 
-**Hitung Cepat** adalah aplikasi web interaktif untuk melatih dan mengasah kemampuan berhitung cepat (*mental math*). Dilengkapi dengan fitur kustomisasi soal, pewaktu (*timer*), analisis statistik, serta efek suara & *background music* sintetis secara *real-time*.
+Rimath is a fast-paced mathematical calculation game designed to sharpen your mental arithmetic and improve computational speed. Wrapped in a futuristic **Dark Space** interface with immersive sound effects, Rimath turns math practice into an engaging and challenging experience.
 
----
+## ✨ Key Features
 
-## ✨ Fitur Utama
+* **🧮 Custom Math Engine (PEMDAS)**
+  A dynamic question generator that automatically handles mathematical operations according to proper order of operations. Players can customize operators (`+`, `-`, `*`, `/`), the number of operands (2–10 numbers), and difficulty levels (Easy, Medium, Hard).
 
-- **⚙️ Kustomisasi Game Lengkap:**
-  - Pilih kombinasi operator matematika (`+`, `-`, `×`, `÷`).
-  - Tentukan panjang kombinasi angka dalam satu soal (minimal 2 angka).
-  - 3 Tingkat Kesulitan: **Easy** (1–100), **Hard** (100–1.000), dan **Extreme** (10.000–100.000).
-  - Durasi timer sesi game yang dapat disesuaikan (10–300 detik).
+* **🎵 Dual-Channel Audio System**
+  Built entirely with the Web Audio API. Separate GainNodes are used for **Background Music (BGM)** and **Sound Effects (SFX)**, ensuring that answer and combo sound effects never interfere with the BGM volume.
 
+* **🔥 Streak & Combo System**
+  Tracks consecutive correct answers and rewards consistent performance with visual animations and special sound effects when reaching **Milestone Combos** at 5, 10, and 20 consecutive correct answers.
 
+* **⏳ Flexible Game Modes**
+  Choose between **Time Attack**, where you race against the clock within a selected duration, or **Endless Mode**, where you can practice without a time limit.
 
-- **📊 Analisis & Statistik Permainan:**
-  - Menampilkan jumlah jawaban benar, salah, dan total soal yang dijawab.
-  - Menghitung **rata-rata waktu menjawab** per soal secara presisi.
+* **💾 Local Storage Auto-Save**
+  Your preferences are automatically saved in your browser, including difficulty settings, game configuration, and BGM & SFX volume levels.
 
-- **🎨 Antarmuka Modern & Responsif:**
-  - Desain *Dark Mode* elegan berstandar modern.
-  - Animasi transisi layar dan efek visual (*pop animation* & *shake effect*).
+* **🌌 Dark Space Glassmorphism UI**
+  A modern, responsive interface featuring **glassmorphism**, *backdrop blur*, a midnight-blue color palette, and vibrant neon-cyan accents.
 
----
+## 🛠️ Built With
 
-## 🛠️ Teknologi yang Digunakan
+Rimath runs entirely on the client side and is built using standard web technologies with no additional frameworks or dependencies:
 
-- **HTML5** – Struktur halaman dan antarmuka interaktif.
-- **CSS3** – Desain UI modern, variabel CSS, dan animasi keyframes.
-- **JavaScript (Vanilla JS)** – Logika perhitungan matematika, timer, dan alur aplikasi.
-- **Web Audio API** – Pembuatan efek suara sintetis & BGM langsung melalui browser.
+* **HTML5** — Application structure.
+* **CSS3** — Styling, animations, and custom range sliders for audio controls.
+* **Vanilla JavaScript** — Game logic, DOM manipulation, and audio synthesis using the Web Audio API.
 
----
+## 🚀 Getting Started
 
-## 📂 Struktur Repositori
+Rimath is a fully static web application, so there is no need to install dependencies or run a build process.
 
-```text
-Project/
-│
-├── index.html       # Struktur antarmuka web
-├── style.css        # Desain tema & animasi CSS
-├── script.js        # Logika utama game & 
-└── favicon.jpg      # Ikon tab browser
-🚀 Cara Menjalankan
-Proyek ini dibuat menggunakan vanilla web technologies (tanpa dependensi atau framework luar), sehingga dapat langsung dijalankan di browser apa saja.
+1. **Clone the repository:**
 
-Clone repositori ini:
+   ```bash
+   git clone https://github.com/username-anda/rimath.git
+   ```
 
-Bash
-git clone [https://github.com/username-kamu/nama-repo.git](https://github.com/username-kamu/nama-repo.git)
-Buka folder proyek:
+2. **Open the project folder.**
 
-Bash
-cd nama-repo
-Buka file index.html langsung di browser pilihanmu (atau gunakan ekstensifikasi Live Server di VS Code).
+3. **Launch `index.html`** in your preferred web browser.
 
-🎮 Cara Bermain
-Dari menu utama, masuk ke menu Setting.
+> 💡 Alternatively, you can try the live demo through GitHub Pages if it has been enabled for the repository.
 
-Pilih operator, panjang soal, tingkat kesulitan, dan durasi waktu yang diinginkan.
+## 🎮 How to Play
 
-Klik Simpan & Kembali, lalu tekan Start untuk memulai permainan.
+1. Open the **⚙️ Settings** menu before starting your first game.
+2. Configure the operators, number of operands, difficulty level, and game duration.
+3. Adjust the **BGM** and **SFX** volume using the Audio panel. A sound preview is available while adjusting the sliders.
+4. Click **Save** and start the game.
+5. Enter the correct answer in the input field and press `Enter` to submit.
+6. Build your streak and aim for the highest **combo** possible!
 
-Ketik jawabanmu pada kotak yang tersedia lalu tekan Enter atau tombol Jawab.
+## 📄 License
 
-Setelah waktu habis atau menekan tombol Quit, statistik hasil latihanmu akan ditampilkan!
-
-📄 Lisensi
-Proyek ini dibuat untuk tujuan pembelajaran dan dapat dikembangkan lebih lanjut secara bebas (Open Source).
+This project is licensed under the [MIT License](LICENSE) — feel free to use, modify, and distribute it.
