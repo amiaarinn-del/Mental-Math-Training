@@ -1,13 +1,22 @@
 /**
- * GAME HITUNG CEPAT (JavaScript Logic) - Final & Bug-Free
- * Standar Matematika: PEMDAS (Standar JavaScript)
+ * GAME HITUNG CEPAT (Rimath) - Dual-Channel Audio System Revision
+ * Includes: PEMDAS Math Engine, Streak System, Endless Mode, & Separate BGM/SFX Channels
  */
+
+// ==========================================
+// 1. STATE & KONFIGURASI PENGATURAN
+// ==========================================
 const setting = {
     operators: [],
     panjangSoal: null,
     difficulty: null,
     durasiTimer: 60,
-    endlessMode: false
+    endlessMode: false,
+    // Audio Settings (Default: BGM = 30%, SFX = 70%)
+    bgmVolume: 30,
+    sfxVolume: 70,
+    bgmMuted: false,
+    sfxMuted: false
 };
 
 let poinBenar = 0;
@@ -17,72 +26,229 @@ let jawabanBenarCurrent = 0;
 let currentStreak = 0;
 let maxStreak = 0;
 
+let timerInterval = null;
+let feedbackTimeout = null;
+let sfxPreviewTimeout = null;
+let isProcessingAnswer = false;
+let sisaWaktu = 60;
+let waktuBerjalan = 0;
+let waktuSoalMulai = 0;
+let totalWaktuJawab = 0;
 
-const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+// ==========================================
+// 2. DUAL-CHANNEL AUDIO ENGINE (WEB AUDIO API)
+// ==========================================
 let audioCtx = null;
+let bgmGainNode = null;
+let sfxGainNode = null;
+let bgmSourceNode = null;
 
-function playSoundEffect(type) {
-    try {
-        if (!AudioContextClass) return;
-        if (!audioCtx) {
+const bgmAudio = new Audio("Music/BGM.mpeg");
+bgmAudio.loop = true;
+
+let isBgmInitialized = false;
+
+// Lazily inisialisasi AudioContext & Gain Nodes tunggal
+function getAudioContext() {
+    if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
             audioCtx = new AudioContextClass();
+
+            // Channel 1: BGM Gain Node
+            bgmGainNode = audioCtx.createGain();
+            bgmGainNode.connect(audioCtx.destination);
+
+            // Channel 2: SFX Gain Node (Terpisah penuh dari BGM)
+            sfxGainNode = audioCtx.createGain();
+            sfxGainNode.connect(audioCtx.destination);
+
+            // Hubungkan bgmAudio ke bgmGainNode
+            try {
+                bgmSourceNode = audioCtx.createMediaElementSource(bgmAudio);
+                bgmSourceNode.connect(bgmGainNode);
+            } catch (e) {
+                console.log("Audio node setup fallback if CORS limits MediaElementSource.");
+            }
         }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
 
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+// Aktifkan Audio pada klik pertama pengguna
+document.addEventListener('click', initBGM, { once: true });
 
-        const now = audioCtx.currentTime;
-        if (type === 'success') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, now);
-            osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
-            gain.gain.setValueAtTime(0.15, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+function initBGM() {
+    if (isBgmInitialized) return;
 
-            osc.start(now);
-            osc.stop(now + 0.15);
+    getAudioContext();
+    updateBgmVolume();
+    updateSfxVolume();
 
-        } else if (type === 'combo5') {
-            // Combo 5
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(523.25, now);
-            osc.frequency.setValueAtTime(659.25, now + 0.08);
-            osc.frequency.setValueAtTime(783.99, now + 0.16);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.start(now);
-            osc.stop(now + 0.3);
+    bgmAudio.play().then(() => {
+        isBgmInitialized = true;
+    }).catch(err => console.log("Autoplay ditahan browser, menunggu interaksi pengguna."));
+}
 
-        } else if (type === 'combo10') {
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(587.33, now);
-            osc.frequency.setValueAtTime(880, now + 0.1);
-            osc.frequency.setValueAtTime(1174.66, now + 0.2);
-            gain.gain.setValueAtTime(0.18, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-            osc.start(now);
-            osc.stop(now + 0.45);
+// Update Volume BGM dengan Transisi Halus (Smooth Transition)
+function updateBgmVolume() {
+    const actualVol = setting.bgmMuted ? 0 : (setting.bgmVolume / 100);
 
-        } else if (type === 'wrong') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(164.81, now);
-            osc.frequency.exponentialRampToValueAtTime(110, now + 0.2);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-            osc.start(now);
-            osc.stop(now + 0.2);
-        }
-    } catch (e) {
-        // Abaikan jika browser memblokir audio.
+    if (audioCtx && bgmGainNode) {
+        bgmGainNode.gain.setTargetAtTime(actualVol, audioCtx.currentTime, 0.02);
+    }
+    if (!bgmSourceNode) {
+        bgmAudio.volume = actualVol;
     }
 }
+
+// Update Volume SFX dengan Transisi Halus
+function updateSfxVolume() {
+    const actualVol = setting.sfxMuted ? 0 : (setting.sfxVolume / 100);
+
+    if (audioCtx && sfxGainNode) {
+        sfxGainNode.gain.setTargetAtTime(actualVol, audioCtx.currentTime, 0.02);
+    }
+}
+
+// Realtime Handler Slider BGM
+function onBgmVolumeInput(val) {
+    setting.bgmVolume = parseInt(val, 10);
+
+    const badge = document.getElementById('bgm-volume-value');
+    if (badge) badge.innerText = `${setting.bgmVolume}%`;
+
+    updateBgmVolume();
+    simpanSettingKeStorage();
+}
+
+// Realtime Handler Slider SFX
+// Realtime Handler Slider SFX dengan Preview Suara
+function onSfxVolumeInput(val) {
+    setting.sfxVolume = parseInt(val, 10);
+
+    const badge = document.getElementById('sfx-volume-value');
+    if (badge) badge.innerText = `${setting.sfxVolume}%`;
+
+    updateSfxVolume();
+    simpanSettingKeStorage();
+
+    // Mainkan sampel suara SFX saat slider digeser
+    if (sfxPreviewTimeout) clearTimeout(sfxPreviewTimeout);
+    sfxPreviewTimeout = setTimeout(() => {
+        playSoundEffect('success');
+    }, 80); // Debounce 80ms agar suara stabil
+}
+
+// Toggle Mute BGM (Nilai Slider Tidak Berubah)
+function toggleMuteBGM() {
+    setting.bgmMuted = !setting.bgmMuted;
+
+    const btn = document.getElementById('btn-mute-bgm');
+    if (btn) {
+        if (setting.bgmMuted) {
+            btn.innerText = '🔇';
+            btn.classList.add('muted');
+        } else {
+            btn.innerText = '🔊';
+            btn.classList.remove('muted');
+        }
+    }
+
+    if (!isBgmInitialized) initBGM();
+    updateBgmVolume();
+    simpanSettingKeStorage();
+}
+
+// Toggle Mute SFX (Nilai Slider Tidak Berubah)
+function toggleMuteSFX() {
+    setting.sfxMuted = !setting.sfxMuted;
+
+    const btn = document.getElementById('btn-mute-sfx');
+    if (btn) {
+        if (setting.sfxMuted) {
+            btn.innerText = '🔇';
+            btn.classList.add('muted');
+        } else {
+            btn.innerText = '🔊';
+            btn.classList.remove('muted');
+        }
+    }
+
+    updateSfxVolume();
+    if (!setting.sfxMuted) playSoundEffect('success');
+    simpanSettingKeStorage();
+}
+
 // ==========================================
-// STREAK UI
+// 3. SOUND EFFECT (SFX) SYNTHESIZER
+// ==========================================
+function playSoundEffect(type) {
+    if (setting.sfxMuted || setting.sfxVolume === 0) return;
+
+    const ctx = getAudioContext();
+    if (!ctx || !sfxGainNode) return;
+
+    let sfxDuration = 0.2;
+    const osc = ctx.createOscillator();
+    const noteGain = ctx.createGain();
+
+    // Hanya terhubung ke SFX Gain Node (TIDAK menyentuh BGM)
+    osc.connect(noteGain);
+    noteGain.connect(sfxGainNode);
+
+    const now = ctx.currentTime;
+
+    if (type === 'success') {
+        sfxDuration = 0.15;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + sfxDuration);
+        noteGain.gain.setValueAtTime(0.3, now);
+        noteGain.gain.exponentialRampToValueAtTime(0.01, now + sfxDuration);
+        osc.start(now); osc.stop(now + sfxDuration);
+
+    } else if (type === 'combo5') {
+        sfxDuration = 0.3;
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.16);
+        noteGain.gain.setValueAtTime(0.35, now);
+        noteGain.gain.exponentialRampToValueAtTime(0.01, now + sfxDuration);
+        osc.start(now); osc.stop(now + sfxDuration);
+
+    } else if (type === 'combo10') {
+        sfxDuration = 0.45;
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.setValueAtTime(880, now + 0.1);
+        osc.frequency.setValueAtTime(1174.66, now + 0.2);
+        noteGain.gain.setValueAtTime(0.3, now);
+        noteGain.gain.exponentialRampToValueAtTime(0.01, now + sfxDuration);
+        osc.start(now); osc.stop(now + sfxDuration);
+
+    } else if (type === 'wrong') {
+        sfxDuration = 0.2;
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(164.81, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + sfxDuration);
+        noteGain.gain.setValueAtTime(0.35, now);
+        noteGain.gain.exponentialRampToValueAtTime(0.01, now + sfxDuration);
+        osc.start(now); osc.stop(now + sfxDuration);
+    }
+}
+
+// Helper untuk simpan ke LocalStorage
+function simpanSettingKeStorage() {
+    localStorage.setItem('rimath_setting', JSON.stringify(setting));
+}
+
+// ==========================================
+// 4. STREAK UI
 // ==========================================
 function updateStreakUI(isIncrement = true) {
     const streakDisplay = document.getElementById('streak-display');
@@ -90,10 +256,8 @@ function updateStreakUI(isIncrement = true) {
 
     if (!streakDisplay || !streakBox) return;
 
-    // Update angka streak
     streakDisplay.innerText = currentStreak;
 
-    // Reset animasi
     streakBox.classList.remove(
         'streak-anim-up',
         'streak-anim-break',
@@ -106,26 +270,16 @@ function updateStreakUI(isIncrement = true) {
 
     if (isIncrement && currentStreak > 0) {
         streakBox.classList.add('streak-anim-up');
-        if (currentStreak >= 20) {
-            streakBox.classList.add('milestone-20');
-        } else if (currentStreak >= 10) {
-            streakBox.classList.add('milestone-10');
-        } else if (currentStreak >= 5) {
-            streakBox.classList.add('milestone-5');
-        }
+        if (currentStreak >= 20) streakBox.classList.add('milestone-20');
+        else if (currentStreak >= 10) streakBox.classList.add('milestone-10');
+        else if (currentStreak >= 5) streakBox.classList.add('milestone-5');
     } else if (!isIncrement) {
         streakBox.classList.add('streak-anim-break');
     }
 }
-let timerInterval = null;
-let feedbackTimeout = null;
-let isProcessingAnswer = false;
-let sisaWaktu = 60;
-let waktuBerjalan = 0;
-let waktuSoalMulai = 0;
-let totalWaktuJawab = 0;
+
 // ==========================================
-// 2. NAVIGASI TAMPILAN & INITIALIZATION
+// 5. NAVIGASI TAMPILAN & INITIALIZATION
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     muatSettingDariStorage();
@@ -136,14 +290,16 @@ function tampilkanScreen(idScreen) {
     semuaScreen.forEach(s => s.classList.remove('active'));
     const screenTarget = document.getElementById(idScreen);
 
-    screenTarget.classList.add('active');
+    if (screenTarget) screenTarget.classList.add('active');
 }
+
 function bukaSetting() {
     tampilkanScreen('screen-setting');
     toggleEndlessMode();
 }
+
 // ==========================================
-// 3. LOGIKA SETTING & LOCAL STORAGE
+// 6. LOGIKA SETTING & LOCAL STORAGE
 // ==========================================
 function toggleEndlessMode() {
     const endlessCheck = document.getElementById('endless-mode');
@@ -186,23 +342,46 @@ function simpanSetting() {
     setting.endlessMode = isEndless;
     setting.durasiTimer = (!isNaN(durasi) && durasi >= 10) ? durasi : 60;
 
-    // Simpan ke LocalStorage
-    localStorage.setItem('rimath_setting', JSON.stringify(setting));
+    simpanSettingKeStorage();
 
     alert("Setting berhasil disimpan!");
     tampilkanScreen('screen-menu');
 }
+
 function resetSetting() {
     setting.operators = [];
     setting.panjangSoal = null;
     setting.difficulty = null;
     setting.durasiTimer = 60;
     setting.endlessMode = false;
+    setting.bgmVolume = 30;
+    setting.sfxVolume = 70;
+    setting.bgmMuted = false;
+    setting.sfxMuted = false;
 
     document.querySelectorAll('.op-check').forEach(cb => cb.checked = false);
     document.getElementById('panjang-soal').value = '';
     document.getElementById('difficulty').value = '';
     document.getElementById('durasi-timer').value = '';
+
+    // Reset UI Audio
+    const bgmSlider = document.getElementById('bgm-volume');
+    const sfxSlider = document.getElementById('sfx-volume');
+    if (bgmSlider) bgmSlider.value = 30;
+    if (sfxSlider) sfxSlider.value = 70;
+
+    const bgmBadge = document.getElementById('bgm-volume-value');
+    const sfxBadge = document.getElementById('sfx-volume-value');
+    if (bgmBadge) bgmBadge.innerText = '30%';
+    if (sfxBadge) sfxBadge.innerText = '70%';
+
+    const btnBgm = document.getElementById('btn-mute-bgm');
+    const btnSfx = document.getElementById('btn-mute-sfx');
+    if (btnBgm) { btnBgm.innerText = '🔊'; btnBgm.classList.remove('muted'); }
+    if (btnSfx) { btnSfx.innerText = '🔊'; btnSfx.classList.remove('muted'); }
+
+    updateBgmVolume();
+    updateSfxVolume();
 
     const endlessCheck = document.getElementById('endless-mode');
     if (endlessCheck) endlessCheck.checked = false;
@@ -214,36 +393,65 @@ function resetSetting() {
 
 function muatSettingDariStorage() {
     const savedData = localStorage.getItem('rimath_setting');
-    if (!savedData) return;
 
-    try {
-        const parsed = JSON.parse(savedData);
-        setting.operators = parsed.operators || [];
-        setting.panjangSoal = parsed.panjangSoal || null;
-        setting.difficulty = parsed.difficulty || null;
-        setting.durasiTimer = parsed.durasiTimer || 60;
-        setting.endlessMode = parsed.endlessMode || false;
+    if (savedData) {
+        try {
+            const parsed = JSON.parse(savedData);
+            setting.operators = parsed.operators || [];
+            setting.panjangSoal = parsed.panjangSoal || null;
+            setting.difficulty = parsed.difficulty || null;
+            setting.durasiTimer = parsed.durasiTimer || 60;
+            setting.endlessMode = parsed.endlessMode || false;
 
-        // Sinkronkan UI Form Setting dengan data tersimpan
-        document.querySelectorAll('.op-check').forEach(cb => {
-            cb.checked = setting.operators.includes(cb.value);
-        });
-        if (setting.panjangSoal) document.getElementById('panjang-soal').value = setting.panjangSoal;
-        if (setting.difficulty) document.getElementById('difficulty').value = setting.difficulty;
-        if (setting.durasiTimer) document.getElementById('durasi-timer').value = setting.durasiTimer;
-
-        const endlessCheck = document.getElementById('endless-mode');
-        if (endlessCheck) {
-            endlessCheck.checked = setting.endlessMode;
-            toggleEndlessMode();
+            if (parsed.bgmVolume !== undefined) setting.bgmVolume = parsed.bgmVolume;
+            if (parsed.sfxVolume !== undefined) setting.sfxVolume = parsed.sfxVolume;
+            if (parsed.bgmMuted !== undefined) setting.bgmMuted = parsed.bgmMuted;
+            if (parsed.sfxMuted !== undefined) setting.sfxMuted = parsed.sfxMuted;
+        } catch (e) {
+            console.error("Gagal memuat setting dari LocalStorage", e);
         }
-    } catch (e) {
-        console.error("Gagal memuat setting dari LocalStorage", e);
+    }
+
+    // Apply ke UI
+    document.querySelectorAll('.op-check').forEach(cb => {
+        cb.checked = setting.operators.includes(cb.value);
+    });
+    if (setting.panjangSoal) document.getElementById('panjang-soal').value = setting.panjangSoal;
+    if (setting.difficulty) document.getElementById('difficulty').value = setting.difficulty;
+    if (setting.durasiTimer) document.getElementById('durasi-timer').value = setting.durasiTimer;
+
+    const bgmSlider = document.getElementById('bgm-volume');
+    const sfxSlider = document.getElementById('sfx-volume');
+    if (bgmSlider) bgmSlider.value = setting.bgmVolume;
+    if (sfxSlider) sfxSlider.value = setting.sfxVolume;
+
+    const bgmBadge = document.getElementById('bgm-volume-value');
+    const sfxBadge = document.getElementById('sfx-volume-value');
+    if (bgmBadge) bgmBadge.innerText = `${setting.bgmVolume}%`;
+    if (sfxBadge) sfxBadge.innerText = `${setting.sfxVolume}%`;
+
+    const btnBgm = document.getElementById('btn-mute-bgm');
+    const btnSfx = document.getElementById('btn-mute-sfx');
+    if (btnBgm) {
+        btnBgm.innerText = setting.bgmMuted ? '🔇' : '🔊';
+        if (setting.bgmMuted) btnBgm.classList.add('muted');
+        else btnBgm.classList.remove('muted');
+    }
+    if (btnSfx) {
+        btnSfx.innerText = setting.sfxMuted ? '🔇' : '🔊';
+        if (setting.sfxMuted) btnSfx.classList.add('muted');
+        else btnSfx.classList.remove('muted');
+    }
+
+    const endlessCheck = document.getElementById('endless-mode');
+    if (endlessCheck) {
+        endlessCheck.checked = setting.endlessMode;
+        toggleEndlessMode();
     }
 }
 
 // ==========================================
-// 4. MATH ENGINE
+// 7. MATH ENGINE
 // ==========================================
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -283,8 +491,9 @@ function buatSoal() {
 
     return { teksSoal, teksJawaban };
 }
+
 // ==========================================
-// 5. LOGIKA TIMER SESI GAME
+// 8. LOGIKA TIMER SESI GAME
 // ==========================================
 function startGlobalTimer() {
     stopTimer();
@@ -337,7 +546,7 @@ function updateTimerDisplay() {
 }
 
 // ==========================================
-// 6. GAMEPLAY & FEEDBACK
+// 9. GAMEPLAY & FEEDBACK
 // ==========================================
 function mulaiGame() {
     if (setting.operators.length === 0 || !setting.panjangSoal || !setting.difficulty) {
@@ -352,13 +561,9 @@ function mulaiGame() {
     totalWaktuJawab = 0;
     isProcessingAnswer = false;
 
-
-    // Reset streak saat sesi baru
     currentStreak = 0;
     maxStreak = 0;
-
     updateStreakUI();
-
 
     tampilkanScreen('screen-game');
     startGlobalTimer();
@@ -387,19 +592,14 @@ function generateSoalBaru() {
     isProcessingAnswer = false;
 }
 
-
-// ==========================================
-// SUBMIT JAWABAN + STREAK
-// ==========================================
 function submitJawaban(event) {
     event.preventDefault();
 
-    // Proteksi: Mencegah spam/double submit saat animasi feedback berjalan
     if (isProcessingAnswer) return;
     isProcessingAnswer = true;
 
     const inputUser = document.getElementById('user-jawab');
-    inputUser.disabled = true; // Kunci input sementara
+    inputUser.disabled = true;
 
     const durasiDetik = (Date.now() - waktuSoalMulai) / 1000;
     totalWaktuJawab += durasiDetik;
@@ -415,41 +615,26 @@ function submitJawaban(event) {
 
     if (isCorrect) {
         poinBenar++;
-        // Tambah streak
         currentStreak++;
-        // Simpan streak tertinggi
-        maxStreak =
-            Math.max(
-                maxStreak, currentStreak);
-
-        // ==============================
-        // MILESTONE COMBO
-        // ==============================
+        maxStreak = Math.max(maxStreak, currentStreak);
 
         if (currentStreak === 5) {
             feedbackEl.innerText = `🔥 5 COMBO! (${durasiDetik.toFixed(2)}s)`;
             playSoundEffect('combo5');
-
         } else if (currentStreak === 10) {
             feedbackEl.innerText = `🔥 10 COMBO! (${durasiDetik.toFixed(2)}s)`;
             playSoundEffect('combo10');
-
         } else if (currentStreak === 20 || (currentStreak > 20 && currentStreak % 10 === 0)) {
             feedbackEl.innerText = `🔥 ${currentStreak} COMBO SPECIAL! (${durasiDetik.toFixed(2)}s)`;
             playSoundEffect('combo10');
-
         } else {
             feedbackEl.innerText = `✓ Benar! (${durasiDetik.toFixed(2)}s)`;
             playSoundEffect('success');
         }
         feedbackEl.className = "feedback correct";
         updateStreakUI(true);
-        // ======================================
-        // JAWABAN SALAH
-        // ======================================
     } else {
         poinSalah++;
-        // Reset streak
         currentStreak = 0;
         updateStreakUI(false);
         playSoundEffect('wrong');
@@ -458,7 +643,6 @@ function submitJawaban(event) {
         feedbackEl.innerText = `✗ Salah! Jawaban: ${Number(jawabanBenarCurrent.toFixed(2))} (${durasiDetik.toFixed(2)}s)`;
     }
 
-    // Simpan ID timeout agar bisa dibatalkan jika tombol Quit ditekan
     feedbackTimeout = setTimeout(() => {
         feedbackEl.innerText = '';
         feedbackEl.className = "feedback";
@@ -466,14 +650,12 @@ function submitJawaban(event) {
     }, 1000);
 }
 
-
 // ==========================================
-// 7. SELESAI GAME & STATISTIK
+// 10. SELESAI GAME & STATISTIK
 // ==========================================
 function selesaiGame() {
     stopTimer();
 
-    // Batalkan pemanggilan soal baru jika Quit ditekan saat feedback masih aktif
     if (feedbackTimeout) {
         clearTimeout(feedbackTimeout);
         feedbackTimeout = null;
@@ -484,7 +666,7 @@ function selesaiGame() {
     document.getElementById('stat-salah').innerText = poinSalah;
     document.getElementById('stat-total').innerText = poinJumlahSoal;
     document.getElementById('stat-rata-waktu').innerText = `${rataRata}s / soal`;
-    // Maximum Streak
+
     const statMaxStreak = document.getElementById('stat-max-streak');
     if (statMaxStreak) {
         statMaxStreak.innerText = `🔥 ${maxStreak}`;

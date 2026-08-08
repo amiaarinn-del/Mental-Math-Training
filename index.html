@@ -93,6 +93,42 @@
                     <span>Endless Mode (Tanpa Batas Waktu)</span>
                 </label>
             </div>
+            <!-- PANEL AUDIO CONTROL (DARK SPACE FUTURISTIC) -->
+            <div class="audio-settings-panel">
+                <div class="audio-panel-title">🎵 AUDIO CONTROL</div>
+
+                <!-- Control Channel BGM -->
+                <div class="audio-control-group">
+                    <div class="audio-label-row">
+                        <span class="audio-label">🎵 Background Music</span>
+                        <div class="audio-actions">
+                            <button type="button" id="btn-mute-bgm" class="btn-mute"
+                                onclick="toggleMuteBGM()">🔊</button>
+                            <span id="bgm-volume-value" class="volume-badge">30%</span>
+                        </div>
+                    </div>
+                    <div class="slider-wrapper">
+                        <input type="range" id="bgm-volume" class="range-slider" min="0" max="100" value="30"
+                            oninput="onBgmVolumeInput(this.value)">
+                    </div>
+                </div>
+
+                <!-- Control Channel SFX -->
+                <div class="audio-control-group">
+                    <div class="audio-label-row">
+                        <span class="audio-label">🔊 Sound Effects</span>
+                        <div class="audio-actions">
+                            <button type="button" id="btn-mute-sfx" class="btn-mute"
+                                onclick="toggleMuteSFX()">🔊</button>
+                            <span id="sfx-volume-value" class="volume-badge">70%</span>
+                        </div>
+                    </div>
+                    <div class="slider-wrapper">
+                        <input type="range" id="sfx-volume" class="range-slider" min="0" max="100" value="70"
+                            oninput="onSfxVolumeInput(this.value)">
+                    </div>
+                </div>
+            </div>
 
             <div class="button-group">
                 <button class="btn btn-primary" onclick="simpanSetting()">Simpan & Kembali</button>
