@@ -43,7 +43,7 @@ let bgmGainNode = null;
 let sfxGainNode = null;
 let bgmSourceNode = null;
 
-const bgmAudio = new Audio("Music/BGM.mpeg");
+const bgmAudio = new Audio("Music/BGM.mp3");
 bgmAudio.loop = true;
 
 let isBgmInitialized = false;
@@ -93,7 +93,7 @@ function initBGM() {
     }).catch(err => console.log("Autoplay ditahan browser, menunggu interaksi pengguna."));
 }
 
-// Update Volume BGM dengan Transisi Halus (Smooth Transition)
+// Update Volume BGM
 function updateBgmVolume() {
     const actualVol = setting.bgmMuted ? 0 : (setting.bgmVolume / 100);
 
@@ -105,7 +105,7 @@ function updateBgmVolume() {
     }
 }
 
-// Update Volume SFX dengan Transisi Halus
+// Update Volume SFX
 function updateSfxVolume() {
     const actualVol = setting.sfxMuted ? 0 : (setting.sfxVolume / 100);
 
@@ -126,7 +126,6 @@ function onBgmVolumeInput(val) {
 }
 
 // Realtime Handler Slider SFX
-// Realtime Handler Slider SFX dengan Preview Suara
 function onSfxVolumeInput(val) {
     setting.sfxVolume = parseInt(val, 10);
 
@@ -143,7 +142,7 @@ function onSfxVolumeInput(val) {
     }, 80); // Debounce 80ms agar suara stabil
 }
 
-// Toggle Mute BGM (Nilai Slider Tidak Berubah)
+// Toggle Mute BGM
 function toggleMuteBGM() {
     setting.bgmMuted = !setting.bgmMuted;
 
@@ -163,7 +162,7 @@ function toggleMuteBGM() {
     simpanSettingKeStorage();
 }
 
-// Toggle Mute SFX (Nilai Slider Tidak Berubah)
+// Toggle Mute SFX
 function toggleMuteSFX() {
     setting.sfxMuted = !setting.sfxMuted;
 
@@ -196,7 +195,7 @@ function playSoundEffect(type) {
     const osc = ctx.createOscillator();
     const noteGain = ctx.createGain();
 
-    // Hanya terhubung ke SFX Gain Node (TIDAK menyentuh BGM)
+    // Hanya terhubung ke SFX Gain Node
     osc.connect(noteGain);
     noteGain.connect(sfxGainNode);
 

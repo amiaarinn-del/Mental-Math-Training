@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rimath — Space Math Workspace</title>
+    <title>Rimath</title>
     <!-- Google Fonts: Outfit (Heading/Numbers) & Inter (Body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,14 +16,13 @@
 </head>
 
 <body>
-    <!-- Efek Cahaya Angkasa Latar Belakang (Kosmetik CSS) -->
     <div class="space-ambient-1"></div>
     <div class="space-ambient-2"></div>
 
     <div class="card">
         <!-- 1. LAYAR MENU UTAMA -->
         <div id="screen-menu" class="screen active">
-            <div class="brand-badge">MENTAL MATH ENGINE</div>
+            <div class="brand-badge">Rimath</div>
             <h1>Hitung Cepat</h1>
             <p class="subtitle">Berlatih Kemampuan Mental Math</p>
 
@@ -87,13 +86,13 @@
                 <label for="durasi-timer">4. Total Waktu Game (Detik):</label>
                 <input type="number" id="durasi-timer" min="10" max="300" placeholder="Default: 60 detik">
 
-                <!-- FITUR BARU: ENDLESS MODE -->
+                <!--ENDLESS MODE -->
                 <label class="checkbox-item endless-wrapper">
                     <input type="checkbox" id="endless-mode" onchange="toggleEndlessMode()">
                     <span>Endless Mode (Tanpa Batas Waktu)</span>
                 </label>
             </div>
-            <!-- PANEL AUDIO CONTROL (DARK SPACE FUTURISTIC) -->
+            <!-- PANEL AUDIO CONTROL -->
             <div class="audio-settings-panel">
                 <div class="audio-panel-title">🎵 AUDIO CONTROL</div>
 
@@ -138,10 +137,10 @@
 
         <!-- 3. LAYAR GAMEPLAY -->
         <div id="screen-game" class="screen">
-            <!-- HEADER GAMEPLAY (Posisikan timer di atas kotak soal) -->
+            <!-- HEADER GAMEPLAY -->
             <div class="game-header">
                 <span class="game-indicator">Semangat!❤️</span>
-                <!-- FITUR BARU: STREAK / COMBO -->
+                <!--STREAK / COMBO -->
                 <div id="streak-box" class="streak-box">
                     <span class="streak-icon">🔥</span>
                     <span id="streak-display" class="streak-number">0</span>
@@ -190,12 +189,12 @@
                     <span>Total Soal Dijawab</span>
                     <strong id="stat-total">0</strong>
                 </div>
-                <!-- FITUR BARU: RATA-RATA WAKTU -->
+                <!-- RATA-RATA WAKTU -->
                 <div class="stat-item">
                     <span>Rata-rata Waktu</span>
                     <strong id="stat-rata-waktu">0s / soal</strong>
                 </div>
-                <!-- FITUR BARU: MAX STREAK -->
+                <!-- MAX STREAK -->
                 <div class="stat-item">
                     <span>Max Streak</span>
                     <strong id="stat-max-streak" class="text-streak">🔥 0</strong>
